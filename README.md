@@ -71,12 +71,18 @@ alembic upgrade head
 ```
 
 
-#### 5. Run the Application
+#### 6. Run the Application
 
 ```bash
 uvicorn main:app --reload
 ```
 The API will be available at http://127.0.0.1:8000. 
+
+#### 7. To be able to access your locally running application remotly use serveo, ngrok, etc.
+
+```bash
+ssh -R subdomainYouLike:80:localhost:8000 serveo.net
+```
 
 ## 📚 Project Structure
 
