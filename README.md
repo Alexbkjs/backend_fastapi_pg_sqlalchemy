@@ -61,7 +61,7 @@ Update the .env file with your PostgreSQL credentials:
 
 
 ```bash
-DATABASE_URL=postgresql://username:password@localhost:5432/your_database_name
+DATABASE_URL=postgresql+asyncpg://username:password@localhost:5432/your_database_name
 ```
 
 #### 5. Apply Database Migrations
