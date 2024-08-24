@@ -41,7 +41,7 @@ For Windows:
 
 ```bash
 python -m venv venv
-.\env\Scripts\activate
+.\venv\Scripts\activate
 ```
 ### 3. Install Dependencies
 ```bash
