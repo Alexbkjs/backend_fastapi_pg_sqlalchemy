@@ -1,7 +1,7 @@
 # 🚀 Backend FastAPI with PostgreSQL and SQLAlchemy
 
 Backend built with **FastAPI**, **PostgreSQL**, and **SQLAlchemy**. This project serves as a foundation for modern web applications and APIs.
-`node_js_mock_data` folder contains genereta_data.js nodejs script to generate initDataRaw that can be verified on back end.
+`node_js_mock_data` folder contains genereta_data.js nodejs script to generate `initDataRaw` that can be verified on back end.
 
 ## 🛠️ Features
 
