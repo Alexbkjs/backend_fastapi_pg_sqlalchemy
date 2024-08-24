@@ -55,7 +55,6 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
 # Endpoint to verify initial data and handle user authentication
 @router.post("/users")
 async def verify_init_data(init_data: InitData, db: AsyncSession = Depends(get_db)):
-    return {"InitData": init_data}
     """
     Verify the initial data received from the client.
 
