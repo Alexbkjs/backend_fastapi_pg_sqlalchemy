@@ -84,6 +84,8 @@ The API will be available at http://127.0.0.1:8000.
 ssh -R subdomainYouLike:80:localhost:8000 serveo.net
 ```
 
+P.S. Give it a moment to propagate.
+
 ## 📚 Project Structure
 
 
