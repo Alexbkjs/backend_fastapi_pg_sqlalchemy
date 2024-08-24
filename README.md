@@ -33,19 +33,18 @@ cd backend_fastapi_pg_sqlalchemy
 For Unix/macOS:
 
 ```bash
-python3 -m venv env
+python3 -m venv venv
 source env/bin/activate
 ```
 
 For Windows:
 
 ```bash
-python -m venv env
+python -m venv venv
 .\env\Scripts\activate
 ```
 ### 3. Install Dependencies
 ```bash
-cd backend
 pip install -r requirements.txt
 ```
 
