@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, BigInteger
 from app.database import Base  # Import the base class for declarative table definitions from your database module
 
 # Define the Quest model for the "quests" table
@@ -14,7 +14,7 @@ class User(Base):
     __tablename__ = 'users' # The table name in the database
 
     id = Column(Integer, primary_key=True, index=True)
-    tID = Column(Integer, unique=True, index=True)  # Telegram ID
+    tID = Column(BigInteger, unique=True, index=True)  # Telegram ID
     first_name = Column(String)
     last_name = Column(String)
     username = Column(String)

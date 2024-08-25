@@ -21,7 +21,12 @@ async def create_user(db: AsyncSession, user: UserCreate):
     # Return the user data with the newly inserted ID
     return {**user.dict(), "id": result.inserted_primary_key[0]}
 
+
 # Function to retrieve a user by their Telegram ID (tID)
+
+    # Since Telegram ID is bigint in regarding to Postgres integer type make sure that you are defining the User model for the "users" table
+    # with tID = Column(BigInteger, unique=True, index=True)  # Telegram ID
+
 async def get_user_by_tID(db: AsyncSession, tID: int):
     # Create a select query to find a user with the given tID
     query = select(UserModel).where(UserModel.tID == tID)
@@ -35,7 +40,7 @@ async def delete_user_by_id(db: AsyncSession, user_id: int):
     # Create a select query to find a user with the given ID
     query = select(UserModel).filter_by(tID=user_id)
     result = await db.execute(query)  # Execute the query asynchronously
-    user = result.scalar_one_or_none()  # Get the single result (or None if no user found)
+    user = result.scalar_one_or_none()  # Get the single result (or None if no user found)q\q
     
     # If a user is found, delete it and commit the transaction
     if user:

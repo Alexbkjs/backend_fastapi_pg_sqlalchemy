@@ -1,18 +1,16 @@
 from logging.config import fileConfig
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from alembic import context
-from app.database import Base  # Import your Base here
-
+import asyncio
 import os
 from dotenv import load_dotenv
 
-# Import your models if you need them for the migration script itself.
-from app.models import Quest  # Import your models
-
+# Load environment variables
 load_dotenv()
+
+# Import your Base and models here
+from app.database import Base
+from app.models import Quest  # Adjust import as needed
 
 # Get the target metadata from Base
 target_metadata = Base.metadata
@@ -29,6 +27,9 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set in the .env file")
 
+# Create the async engine
+engine = create_async_engine(DATABASE_URL, echo=True)
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode."""
     context.configure(
@@ -41,19 +42,15 @@ def run_migrations_offline():
         context.run_migrations()
 
 async def run_migrations_online():
-    """Run migrations in 'online' mode."""
-    connectable = create_async_engine(
-        DATABASE_URL,
-        poolclass=pool.NullPool,
-    )
-
-    async with connectable.connect() as connection:
+    async with engine.connect() as connection:
+        # Use `run_sync` to handle sync operations
         await connection.run_sync(do_run_migrations)
 
-async def do_run_migrations(connection: Connection):
+def do_run_migrations(connection):
+    """Run migrations with a synchronous connection."""
     context.configure(
         connection=connection,
-        target_metadata=target_metadata
+        target_metadata=target_metadata,
     )
 
     with context.begin_transaction():

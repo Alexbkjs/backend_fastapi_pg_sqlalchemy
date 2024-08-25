@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from typing import Optional
+
 
 # Base model for Quest data used for validation and serialization
 class QuestBase(BaseModel):
@@ -19,7 +21,7 @@ class UserBase(BaseModel):
     last_name: str  # User's last name
     username: str  # User's username
     language_code: str  # Language code for the user
-    is_premium: bool  # Indicates if the user has a premium account
+    is_premium: Optional[bool] = False  # Indicates if the user has a premium account
     allows_write_to_pm: bool  # Indicates if the user allows receiving private messages
 
 # Model for creating a new user, inherits from UserBase
@@ -28,7 +30,6 @@ class UserCreate(UserBase):  # Inherit from UserBase to avoid duplication
 
 # Model representing a user including additional fields, inherits from UserBase
 class User(UserBase):  # Inherit from UserBase to avoid duplication
-    id: int  # Unique identifier for the user
     tID: int  # Telegram ID of the user
 
     class Config:
