@@ -1,7 +1,6 @@
 # 🚀 Backend FastAPI with PostgreSQL and SQLAlchemy
 
 Backend built with **FastAPI**, **PostgreSQL**, and **SQLAlchemy**. This project serves as a foundation for modern web applications and APIs.
-`node_js_mock_data` folder contains genereta_data.js nodejs script to generate `initDataRaw` that can be verified on back end.
 
 ## 🛠️ Features
 
@@ -28,6 +27,7 @@ Follow these steps to clone the repository and set up the project locally.
 git clone https://github.com/Alexbkjs/backend_fastapi_pg_sqlalchemy.git
 cd backend_fastapi_pg_sqlalchemy
 ```
+
 ### 2. Create and Activate a Virtual Environment
 
 For Unix/macOS:
@@ -43,7 +43,9 @@ For Windows:
 python -m venv venv
 .\venv\Scripts\activate
 ```
+
 ### 3. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -57,8 +59,7 @@ createdb your_database_name
 ```
 
 - #### 4.2. Update the Database Connection Settings:
-Update the .env file with your PostgreSQL credentials:
-
+  Update the .env file with your PostgreSQL credentials:
 
 ```bash
 DATABASE_URL=postgresql+asyncpg://username:password@localhost:5432/your_database_name
@@ -70,13 +71,13 @@ DATABASE_URL=postgresql+asyncpg://username:password@localhost:5432/your_database
 alembic upgrade head
 ```
 
-
 #### 6. Run the Application
 
 ```bash
 uvicorn main:app --reload
 ```
-The API will be available at http://127.0.0.1:8000. 
+
+The API will be available at http://127.0.0.1:8000.
 
 #### 7. To be able to access your locally running application remotly use serveo, ngrok, etc.
 
@@ -87,7 +88,6 @@ ssh -R subdomainYouLike:80:localhost:8000 serveo.net
 P.S. Give it a moment to propagate.
 
 ## 📚 Project Structure
-
 
 ```bash
 backend_fastapi_pg_sqlalchemy/
@@ -102,13 +102,17 @@ backend_fastapi_pg_sqlalchemy/
 ├── main.py                # FastAPI entry point
 └── README.md              # Project documentation
 ```
+
 ## ✅ Running Tests
+
 To run tests, you can use pytest:
 
 ```bash
 pytest
 ```
+
 ## 🤝 Contributing
+
 Contributions are welcome! Please feel free to submit a Pull Request or open an issue.
 
 1. - Fork the repository.
@@ -118,9 +122,11 @@ Contributions are welcome! Please feel free to submit a Pull Request or open an 
 5. - Open a Pull Request.
 
 ## 🛡️ License
+
 This project is licensed under the Apache License. See the LICENSE file for more details.
 
 ## 🌟 Acknowledgements
+
 - FastAPI
 - PostgreSQL
 - SQLAlchemy
