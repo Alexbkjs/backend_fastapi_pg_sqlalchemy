@@ -27,6 +27,15 @@ AsyncSessionLocal = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+# Async function to create the tables
+async def create_tables():
+    async with async_engine.begin() as conn:
+        # Drop all tables (for development/testing purposes, remove in production)
+        await conn.run_sync(Base.metadata.drop_all)
+        # Create all tables
+        await conn.run_sync(Base.metadata.create_all)
+
 async def seed_users():
     async with AsyncSessionLocal() as session:
         async with session.begin():
@@ -157,6 +166,7 @@ async def seed_user_quest_progress():
         await session.commit()
 
 async def main():
+    await create_tables()
     await seed_users()
     await seed_quests()
     await seed_achievements()
