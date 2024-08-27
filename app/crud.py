@@ -8,7 +8,7 @@ from app.schemas import UserCreate, User as UserSchema, QuestCreate
 async def create_user(db: AsyncSession, user: UserCreate):
     # Create an insert query for the UserModel table with the provided user data
     query = UserModel.__table__.insert().values(
-        tID=user.id,
+        telegram_id=user.telegram_id,
         first_name=user.first_name,
         last_name=user.last_name,
         username=user.username,
@@ -25,20 +25,24 @@ async def create_user(db: AsyncSession, user: UserCreate):
 # Function to retrieve a user by their Telegram ID (tID)
 
     # Since Telegram ID is bigint in regarding to Postgres integer type make sure that you are defining the User model for the "users" table
-    # with tID = Column(BigInteger, unique=True, index=True)  # Telegram ID
+    # with telegram_id = Column(BigInteger, unique=True, index=True)  # Telegram ID
 
-async def get_user_by_tID(db: AsyncSession, tID: int):
+async def get_user_by_tID(db: AsyncSession, telegram_id: int):
     # Create a select query to find a user with the given tID
-    query = select(UserModel).where(UserModel.tID == tID)
+
+    query = select(UserModel).where(UserModel.telegram_id == telegram_id)
     result = await db.execute(query)  # Execute the query asynchronously
     user = result.scalars().first()  # Get the first result (or None if no user found)
     # Return the user as a UserSchema if found, otherwise None
     return UserSchema.from_orm(user) if user else None
 
-# Function to delete a user by their ID(TelegramID)
+
+
+
+# Function to delete a user by their ID(Telegram_id)
 async def delete_user_by_id(db: AsyncSession, user_id: int):
     # Create a select query to find a user with the given ID
-    query = select(UserModel).filter_by(tID=user_id)
+    query = select(UserModel).filter_by(telegram_id=user_id)
     result = await db.execute(query)  # Execute the query asynchronously
     user = result.scalar_one_or_none()  # Get the single result (or None if no user found)q\q
     
