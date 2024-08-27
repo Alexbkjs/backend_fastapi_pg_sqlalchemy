@@ -44,6 +44,8 @@ class UserBase(BaseModel):
     coins: Optional[int] = 1000
     role: Optional[UserRole] = None
 
+    
+
 # Model for creating a new user, inherits from UserBase
 class UserCreate(UserBase):
     pass
@@ -117,3 +119,6 @@ class RewardCreate(RewardBase):
 # Model representing a reward including an ID, inherits from RewardBase
 class Reward(RewardBase):
     id: UUID
+
+    class Config:
+        from_attributes = True

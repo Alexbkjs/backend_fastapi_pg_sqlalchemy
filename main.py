@@ -21,3 +21,5 @@ app.include_router(usesr_router, prefix="/api", tags=["users"])
 
 # Include the quest routes from the quest_routes module under the /api prefix with the tag "quests"
 app.include_router(quest_router, prefix="/api", tags=["quests"])  # Include quest routes
+
+print('Expose to the world: ssh -R questback:80:localhost:8000 serveo.net')

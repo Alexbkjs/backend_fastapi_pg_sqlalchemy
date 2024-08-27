@@ -19,7 +19,7 @@ async def create_user(db: AsyncSession, user: UserCreate):
     result = await db.execute(query)  # Execute the query asynchronously
     await db.commit()  # Commit the transaction
     # Return the user data with the newly inserted ID
-    return {**user.dict(), "id": result.inserted_primary_key[0]}
+    return {**user.model_dump(), "id": result.inserted_primary_key[0]}
 
 
 # Function to retrieve a user by their Telegram ID (tID)
@@ -34,10 +34,12 @@ async def get_user_by_tID(db: AsyncSession, telegram_id: int):
     result = await db.execute(query)  # Execute the query asynchronously
     user = result.scalars().first()  # Get the first result (or None if no user found)
     # Return the user as a UserSchema if found, otherwise None
-    return UserSchema.from_orm(user) if user else None
 
-
-
+    # Convert the SQLAlchemy model instance to a dictionary before validating
+    user_dict = user.__dict__ if user else None
+    
+    # Return the user as a UserSchema if found, otherwise None
+    return UserSchema.model_validate(user_dict) if user_dict else None
 
 # Function to delete a user by their ID(Telegram_id)
 async def delete_user_by_id(db: AsyncSession, user_id: int):
