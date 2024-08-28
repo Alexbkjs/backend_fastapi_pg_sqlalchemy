@@ -1,13 +1,40 @@
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 
-from app.models import User as UserModel, Quest as QuestModel
+from app.models import User as UserModel, Quest as QuestModel, UserQuestProgress
 from app.schemas import UserCreate, User as UserSchema, QuestCreate
+from uuid import UUID
 
-# Function to create a new user in the database
-async def create_user(db: AsyncSession, user: UserCreate):
-    # Create an insert query for the UserModel table with the provided user data
-    query = UserModel.__table__.insert().values(
+from sqlalchemy.future import select  # Import select for query building
+from sqlalchemy.orm import selectinload  # Import selectinload for eager loading of related rows
+
+# Function to delete a user by their ID (Telegram_id) in a cascade manner
+async def delete_user_by_id(db: AsyncSession, user_id: int):
+    # Create a select query to find a user with the given ID and load related entities if necessary
+    query = select(UserModel).filter_by(telegram_id=user_id).options(selectinload(UserModel.quests), selectinload(UserModel.achievements)) 
+    result = await db.execute(query)  # Execute the query asynchronously
+    user = result.scalar_one_or_none()  # Get the single result (or None if no user found)
+    
+    # If a user is found, delete it and commit the transaction
+    if user:
+        await db.delete(user)
+        await db.commit()
+        return True  # Return True if the deletion was successful
+    return False  # Return False if no user was found
+
+
+async def create_user(db: AsyncSession, user: UserCreate) -> UserModel:
+    """
+    Create a new user in the database.
+
+    - **db**: Database session dependency.
+    - **user**: Pydantic model containing user data.
+    
+    Returns the created user instance.
+    """
+    # Create a new User model instance, including the selected role
+    new_user = UserModel(
         telegram_id=user.telegram_id,
         first_name=user.first_name,
         last_name=user.last_name,
@@ -15,11 +42,20 @@ async def create_user(db: AsyncSession, user: UserCreate):
         language_code=user.language_code,
         is_premium=user.is_premium,
         allows_write_to_pm=user.allows_write_to_pm,
+        role=user.role  # Include the selected role
     )
-    result = await db.execute(query)  # Execute the query asynchronously
-    await db.commit()  # Commit the transaction
-    # Return the user data with the newly inserted ID
-    return {**user.model_dump(), "id": result.inserted_primary_key[0]}
+    
+    # Add the new User instance to the session
+    db.add(new_user)
+    
+    # Commit the transaction to persist the new User instance
+    await db.commit()
+    
+    # Refresh the instance to load any database-generated fields like 'id'
+    await db.refresh(new_user)
+    
+    return new_user
+
 
 
 # Function to retrieve a user by their Telegram ID (tID)
@@ -41,20 +77,6 @@ async def get_user_by_tID(db: AsyncSession, telegram_id: int):
     # Return the user as a UserSchema if found, otherwise None
     return UserSchema.model_validate(user_dict) if user_dict else None
 
-# Function to delete a user by their ID(Telegram_id)
-async def delete_user_by_id(db: AsyncSession, user_id: int):
-    # Create a select query to find a user with the given ID
-    query = select(UserModel).filter_by(telegram_id=user_id)
-    result = await db.execute(query)  # Execute the query asynchronously
-    user = result.scalar_one_or_none()  # Get the single result (or None if no user found)q\q
-    
-    # If a user is found, delete it and commit the transaction
-    if user:
-        await db.delete(user)
-        await db.commit()
-        return True  # Return True if the deletion was successful
-    return False  # Return False if no user was found
-
 # Function to create a new quest in the database
 async def create_quest(quest: QuestCreate, db: AsyncSession):
     # Create an insert query for the QuestModel table with the provided quest data
@@ -71,3 +93,39 @@ async def get_quests(db: AsyncSession, skip: int = 0, limit: int = 10):
     result = await db.execute(query)  # Execute the query asynchronously
     # Return a list of quests
     return result.scalars().all()
+
+
+
+async def assign_initial_quests(db: AsyncSession, user_id: UUID):
+    """
+    Assign 4 quests to a new user, with 2 being blocked and 2 being active.
+
+    - **db**: Database session dependency.
+    - **user_id**: ID of the newly created user.
+    """
+
+    # Fetch quests from the database (modify as needed to suit your schema and requirements)
+    result = await db.execute(
+        select(QuestModel).limit(4)  # Fetching 4 quests; adjust as needed
+    )
+    quests = result.scalars().all()
+
+    if len(quests) < 4:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Not enough quests available to assign."
+        )
+
+    # Assign quests, with 2 blocked and 2 not blocked
+    for idx, quest in enumerate(quests):
+        status = "active" if idx >= 2 else "blocked"
+        await db.execute(
+            UserQuestProgress.__table__.insert().values(
+                user_id=user_id,
+                quest_id=quest.id,
+                status=status,
+                is_locked=status == "blocked"  # Using is_locked to reflect blocked status
+            )
+        )
+    
+    await db.commit()

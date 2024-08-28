@@ -31,7 +31,7 @@ class User(Base):
     updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
 
     achievements = relationship("Achievement", back_populates="user")
-    active_quests = relationship("UserQuestProgress", back_populates="user")
+    quests = relationship("UserQuestProgress", back_populates="user")
 
 class Quest(Base):
     __tablename__ = "quests"
@@ -77,8 +77,10 @@ class UserQuestProgress(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
 
-    user = relationship("User", back_populates="active_quests")
+    user = relationship("User", back_populates="quests")
     quest = relationship("Quest", back_populates="user_quest_progress")
+
+    
 
 class Requirement(Base):
     __tablename__ = "requirements"

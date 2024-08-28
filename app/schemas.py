@@ -120,5 +120,9 @@ class RewardCreate(RewardBase):
 class Reward(RewardBase):
     id: UUID
 
+# Pydantic model for role selection
+class RoleSelection(BaseModel):
+    role: str
+
     class Config:
         from_attributes = True
