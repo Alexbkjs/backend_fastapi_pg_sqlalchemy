@@ -8,68 +8,84 @@ import urllib.parse  # For URL parsing and decoding
 from fastapi import APIRouter, HTTPException, Depends, Request, status  # FastAPI components for routing and error handling
 from pydantic import BaseModel  # Pydantic for data validation
 from sqlalchemy.ext.asyncio import AsyncSession  # SQLAlchemy for asynchronous database operations
+from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 
 # Local Application Imports
-from app.schemas import UserCreate, User, RoleSelection  # User data validation schema
-from app.crud import get_user_by_tID, create_user, delete_user_by_id, assign_initial_quests  # CRUD operations
+from app.schemas import User, UserRole, UserBase, UserQuestProgress, RoleSelection  # User data validation schema
+from app.crud import get_user_by_tID, create_user, delete_user_by_id, assign_initial_quests, assign_initial_achievements  # CRUD operations
 from app.database import get_db  # Database session dependency
-
-from dotenv import load_dotenv  # For loading environment variables from .env file
-import os  # For accessing environment variables
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Access environment variables using os.getenv
-bot_token = os.getenv("BOT_TOKEN")  # Retrieve the bot token from environment variables
-
-from app.utils.validate import validate_init_data
 
 router = APIRouter()  # Create an APIRouter instance for handling routes
 
 # Endpoint to verify initial data and handle user authentication
 @router.get("/users")
-async def verify_init_data(request: Request, db: AsyncSession = Depends(get_db)):
+
+async def get_user_data(request: Request, db: AsyncSession = Depends(get_db)):
     """
     Verify the initial data received from the client.
 
     - **request**: The incoming request containing headers.
     - **db**: Database session dependency, automatically provided by FastAPI.
 
-    Returns a redirect URL based on whether the user exists or is newly created.
+    Returns the user along with their quest progress and redirects to the profile page.
     """
 
-    # Extract Authorization header
-    auth_header = request.headers.get("Authorization")
+    # Access validated params from /utils/auth_middleware
+    validated_params = request.state.validated_params
     
-    if not auth_header or not auth_header.startswith("tma "):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Authorization header missing or improperly formatted"
-        )
-    
-    # Extract initDataRaw from the header (after "tma ")
-    init_data_raw = auth_header[len("tma "):]
-
-    # Validate the initial data (separate logic)
-    params = validate_init_data(init_data_raw, bot_token)
-
     # Extract user data after validation
-    user_data_str = params.get('user', '')
+    user_data_str = validated_params.get('user', '')
     user_data = json.loads(user_data_str) if user_data_str else {}
+    
+
 
     # Map the received field names to the model's expected names if needed
     user_data['telegram_id'] = user_data.pop('id')
     user_data['is_premium'] = False
     user_data['user_class'] = 'Mage'
 
-
-    # Check if the user exists in the database
     existing_user = await get_user_by_tID(db, user_data.get('telegram_id'))
+
     if existing_user:
-        return {"user": existing_user, "redirect": "/profile", "message": "User already exists, user data from db"}
+        user_data_response = {
+            "id": str(existing_user.id),
+            "telegram_id": existing_user.telegram_id,
+            "first_name": existing_user.first_name,
+            "last_name": existing_user.last_name,
+            "username": existing_user.username,
+            "user_class": existing_user.user_class,
+            "level": existing_user.level,
+            "points": existing_user.points,
+            "coins": existing_user.coins,
+            "quests": [
+                {
+                    "id": str(progress.quest.id),
+                    "name": progress.quest.name,
+                    "status": progress.status,
+                    "progress": progress.progress,
+                    "started_at": progress.started_at,
+                    "completed_at": progress.completed_at,
+                    "is_locked": progress.is_locked
+                }
+                for progress in existing_user.quest_progress
+            ],
+            "achievements": [
+                {
+                    "id": str(achievement.id),
+                    "name": achievement.achievement.name,
+                    "description": achievement.achievement.description,
+                    "image_url": achievement.achievement.image_url,
+                    "is_locked": achievement.is_locked
+                }
+                for achievement in existing_user.achievements
+            ]
+        }
+        
+        return {"user": user_data_response, "redirect": "/profile", "message": "User already exists, user data from db"}
     else:
         return {"redirect": "/choose-role", "message": "Please choose a role to complete your registration."}
+
 
 
 @router.post("/users")
@@ -87,24 +103,12 @@ async def create_user_after_role_selection(
 
     Returns the created user and redirects to the profile page.
     """
-
-    # Extract Authorization header
-    auth_header = request.headers.get("Authorization")
     
-    if not auth_header or not auth_header.startswith("tma "):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Authorization header missing or improperly formatted"
-        )
-    
-    # Extract initDataRaw from the header (after "tma ")
-    init_data_raw = auth_header[len("tma "):]
-
-    # Validate the initial data (separate logic)
-    params = validate_init_data(init_data_raw, bot_token)
+    # Access validated params from /utils/auth_middleware
+    validated_params = request.state.validated_params
 
     # Extract user data after validation
-    user_data_str = params.get('user', '')
+    user_data_str = validated_params.get('user', '')
     user_data = json.loads(user_data_str) if user_data_str else {}
 
     # Map the received field names to the model's expected names if needed
@@ -114,20 +118,96 @@ async def create_user_after_role_selection(
 
     # Add the selected role to the user data
     user_data['role'] = role_selection.role
-
-
+    
+    
     # Check if the user exists in the database
     existing_user = await get_user_by_tID(db, user_data.get('telegram_id'))
+
     if existing_user:
-        return {"user": existing_user, "redirect": "/profile", "message": "User already exists, preventing multiple user creation!"}
+        # Existing user case
+        user_data_response = {
+            "id": str(existing_user.id),
+            "telegram_id": existing_user.telegram_id,
+            "first_name": existing_user.first_name,
+            "last_name": existing_user.last_name,
+            "username": existing_user.username,
+            "user_class": existing_user.user_class,
+            "level": existing_user.level,
+            "points": existing_user.points,
+            "coins": existing_user.coins,
+            "quests": [
+                {
+                    "id": str(progress.quest.id),
+                    "name": progress.quest.name,
+                    "status": progress.status,
+                    "progress": progress.progress,
+                    "started_at": progress.started_at,
+                    "completed_at": progress.completed_at,
+                    "is_locked": progress.is_locked
+                }
+                for progress in existing_user.quest_progress
+            ],
+            "achievements": [
+                {
+                    "id": str(achievement.id),
+                    "name": achievement.achievement.name,
+                    "description": achievement.achievement.description,
+                    "image_url": achievement.achievement.image_url,
+                    "is_locked": achievement.is_locked
+                }
+                for achievement in existing_user.achievements
+            ]
+        }
+        return {"user": user_data_response, "redirect": "/profile", "message": "User already exists, preventing multiple user creation!"}
     else:
         # Create the new user with the selected role
-        new_user = await create_user(db, UserCreate(**user_data))
-  
-        await assign_initial_quests(db, new_user.id)
-    
-        return {"user": new_user, "redirect": "/profile", "message": "User created successfully with selected role. Initial quests has been asigned."}
+        new_user = await create_user(db, UserBase(**user_data))
 
+        # Assign initial quests and achievements
+        await assign_initial_quests(db, new_user.id)
+        await assign_initial_achievements(db, new_user.id)
+
+        # Fetch the newly created user data
+        new_user_data = await get_user_by_tID(db, user_data.get('telegram_id'))
+
+        
+
+        user_data_response = {
+            "id": str(new_user_data.id),
+            "telegram_id": new_user_data.telegram_id,
+            "first_name": new_user_data.first_name,
+            "last_name": new_user_data.last_name,
+            "username": new_user_data.username,
+            "user_class": new_user_data.user_class,
+            "level": new_user_data.level,
+            "points": new_user_data.points,
+            "coins": new_user_data.coins,
+            "quests": [
+                {
+                    "id": str(progress.quest.id),
+                    "name": progress.quest.name,
+                    "status": progress.status,
+                    "progress": progress.progress,
+                    "started_at": progress.started_at,
+                    "completed_at": progress.completed_at,
+                    "is_locked": progress.is_locked
+                }
+                for progress in new_user_data.quest_progress
+            ],
+            "achievements": [
+                {
+                    "id": str(achievement.id),
+                    "name": achievement.achievement.name,
+                    "description": achievement.achievement.description,
+                    "image_url": achievement.achievement.image_url,
+                    "is_locked": achievement.is_locked,
+                    "status": achievement.status
+                }
+                for achievement in new_user_data.achievements
+            ]
+            
+        }
+        return {"user": user_data_response, "redirect": "/profile", "message": "User created successfully with selected role. Initial quests have been assigned."}
 
 # Endpoint to delete a user by ID
 @router.delete("/users/{user_id}")

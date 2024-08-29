@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 from enum import Enum
@@ -10,119 +10,116 @@ class UserRole(str, Enum):
     avatar = "avatar"
     kingdom = "kingdom"
 
-# Base model for Quest data used for validation and serialization
+class RoleSelection(BaseModel):
+    role: UserRole
+
+# Quest schema
 class QuestBase(BaseModel):
     name: str
-    image_url: str = ""
-    description: str = ""
-    award: str = ""
-    goal: str = ""
+    image_url: Optional[str] = None
+    description: Optional[str] = None
+    award: Optional[str] = None
+    goal: Optional[str] = None
 
-# Model for creating a new quest, inherits from QuestBase
-class QuestCreate(QuestBase):
-    pass
-
-# Model representing a quest including an ID, inherits from QuestBase
 class Quest(QuestBase):
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-# Base model for User data used for validation and serialization
+    class Config:
+        from_attributes = True
+
+# Requirement schema
+class RequirementBase(BaseModel):
+    description: str
+
+class Requirement(RequirementBase):
+    id: UUID
+    quest_id: UUID
+
+    class Config:
+        from_attributes = True
+
+# Reward schema
+class RewardBase(BaseModel):
+    description: str
+
+class Reward(RewardBase):
+    id: UUID
+    quest_id: UUID
+
+    class Config:
+        from_attributes = True
+
+# UserQuestProgress schema
+class UserQuestProgressBase(BaseModel):
+    status: str
+    progress: float
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    is_locked: bool = True
+
+class UserQuestProgress(UserQuestProgressBase):
+    id: UUID
+    quest_id: UUID
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    quest: Optional[Quest] = None  # Nested Quest model
+
+    class Config:
+        from_attributes = True
+
+# Achievement schema
+class AchievementBase(BaseModel):
+    name: str
+    description: str
+    image_url: Optional[str] = None
+
+class Achievement(AchievementBase):
+    id: UUID
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+# UserAchievement schema
+class UserAchievementBase(BaseModel):
+    status: str  # "active" or "blocked"
+    is_locked: bool = False
+
+class UserAchievement(UserAchievementBase):
+    id: UUID
+    user_id: UUID
+    achievement_id: UUID
+    achievement: Optional[Achievement] = None  # Nested Achievement model
+
+    class Config:
+        from_attributes = True
+
+# User schema
 class UserBase(BaseModel):
     telegram_id: int
     first_name: str
     last_name: str
-    username: str
-    language_code: Optional[str]
-    allows_write_to_pm: Optional[bool]
-    is_premium: Optional[bool]
-    user_class: Optional[str]
-    image_url: Optional[str] = "https://quests-app-bucket.s3.eu-north-1.amazonaws.com/images/02.jpg"
-    level: Optional[int] = 1
-    points: Optional[int] = 100
-    coins: Optional[int] = 1000
+    username: Optional[str] = None
+    user_class: Optional[str] = None
+    image_url: Optional[str] = "https://quest_progress-app-bucket.s3.eu-north-1.amazonaws.com/images/02.jpg"
+    level: int = 1
+    points: int = 100
+    coins: int = 1000
+    language_code: Optional[str] = None
+    is_premium: Optional[bool] = None
+    allows_write_to_pm: Optional[bool] = None
     role: Optional[UserRole] = None
 
-    
+    quest_progress: List[UserQuestProgress] = []  # Nested UserQuestProgress
+    achievements: List[UserAchievement] = []  # Nested UserAchievement
 
-# Model for creating a new user, inherits from UserBase
-class UserCreate(UserBase):
-    pass
-
-# Model representing a user including an ID, inherits from UserBase
 class User(UserBase):
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
-
-# Base model for Achievement data used for validation and serialization
-class AchievementBase(BaseModel):
-    name: str
-    description: str
-    image_url: Optional[str]
-    is_locked: Optional[bool] = True
-
-# Model for creating a new achievement, inherits from AchievementBase
-class AchievementCreate(AchievementBase):
-    pass
-
-# Model representing an achievement including an ID, inherits from AchievementBase
-class Achievement(AchievementBase):
-    id: UUID
-    user_id: Optional[UUID]
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-# Base model for UserQuestProgress data used for validation and serialization
-class UserQuestProgressBase(BaseModel):
-    user_id: UUID
-    quest_id: UUID
-    status: str
-    progress: Optional[float] = 0.0
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    is_locked: Optional[bool] = True
-
-# Model for creating a new user quest progress, inherits from UserQuestProgressBase
-class UserQuestProgressCreate(UserQuestProgressBase):
-    pass
-
-# Model representing user quest progress including an ID, inherits from UserQuestProgressBase
-class UserQuestProgress(UserQuestProgressBase):
-    id: UUID
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-# Base model for Requirement data used for validation and serialization
-class RequirementBase(BaseModel):
-    description: str
-    quest_id: UUID
-
-# Model for creating a new requirement, inherits from RequirementBase
-class RequirementCreate(RequirementBase):
-    pass
-
-# Model representing a requirement including an ID, inherits from RequirementBase
-class Requirement(RequirementBase):
-    id: UUID
-
-# Base model for Reward data used for validation and serialization
-class RewardBase(BaseModel):
-    description: str
-    quest_id: UUID
-
-# Model for creating a new reward, inherits from RewardBase
-class RewardCreate(RewardBase):
-    pass
-
-# Model representing a reward including an ID, inherits from RewardBase
-class Reward(RewardBase):
-    id: UUID
-
-# Pydantic model for role selection
-class RoleSelection(BaseModel):
-    role: str
 
     class Config:
         from_attributes = True

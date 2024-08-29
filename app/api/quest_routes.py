@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas import QuestCreate, Quest
+from app.schemas import Quest
 from app.crud import create_quest, get_quests
 from app.database import get_db
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 # Endpoint to create a new quest
 @router.post("/quests/", response_model=Quest)
-async def create_new_quest(quest: QuestCreate, db: AsyncSession = Depends(get_db)):
+async def create_new_quest(quest: Quest, db: AsyncSession = Depends(get_db)):
     """
     Create a new quest in the database.
     

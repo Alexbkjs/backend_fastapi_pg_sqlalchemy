@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.user_routes import router as usesr_router
 from app.api.quest_routes import router as quest_router
 
+from app.utils.auth_middleware import AuthMiddleware
 # Create an instance of the FastAPI application
 app = FastAPI()
 
@@ -15,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],  # Allow all headers in requests
 )
+# Add the AuthMiddleware to the app
+app.add_middleware(AuthMiddleware)
 
 # Include the user routes from the user_routes module under the /api prefix with the tag "users"
 app.include_router(usesr_router, prefix="/api", tags=["users"])
